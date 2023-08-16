@@ -33,6 +33,7 @@ module TestOMJulia
     @testset "OpenModelica" begin
       omc = OMJulia.OMCSession()
       @test 3==OMJulia.sendExpression(omc, "1+2")
+      OMJulia.sendExpression(omc, "quit()", parsed=false)
     end
   end
 end
