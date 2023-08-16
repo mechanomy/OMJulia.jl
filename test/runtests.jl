@@ -36,4 +36,77 @@ module TestOMJulia
       OMJulia.sendExpression(omc, "quit()", parsed=false)
     end
   end
+
+  @testset "sendExpression(simulate()) - builtin" begin
+    omc = OMJulia.OMCSession()
+    try
+      ret = OMJulia.sendExpression(omc, "loadModelica()")
+      ret = OMJulia.sendExpression(omc, "loadModel(Modelica.Mechanics.MultiBody.Examples.Elementary.Pendulum)")
+      ret = OMJulia.sendExpression(omc, "simulate(Modelica.Mechanics.MultiBody.Examples.Elementary.Pendulum)")
+      @test !isempty(ret["resultFile"]) && isfile(ret["resultFile"])
+    catch e
+      println("\ncaught error[$e]\n")
+      @test false
+    finally
+      OMJulia.sendExpression(omc, "quit()", parsed=false)
+    end
+  end
+
+  # Write a copy of the Modelica.MultiBody.Examples.Elementary.Pendulum used above to a temp file:
+  pendulumText = """model Pendulum "Simple pendulum with one revolute joint and one body"
+      extends Modelica.Icons.Example;
+      inner Modelica.Mechanics.MultiBody.World world(gravityType=Modelica.Mechanics.MultiBody.Types.GravityTypes.  UniformGravity);
+      Modelica.Mechanics.MultiBody.Joints.Revolute rev(n={0,0,1},useAxisFlange=true, phi(fixed=true), w(fixed=true));
+      Modelica.Mechanics.Rotational.Components.Damper damper( d=0.1);
+      Modelica.Mechanics.MultiBody.Parts.Body body(m=1.0, r_CM={0.5,0,0});
+    equation
+      connect(world.frame_b, rev.frame_a);
+      connect(damper.flange_b, rev.axis);
+      connect(rev.support, damper.flange_a);
+      connect(body.frame_a, rev.frame_b);
+      annotation ( experiment(StopTime=5));
+    end Pendulum;
+    """
+  pendulumName = "Pendulum"
+  tempDir = mktempdir(prefix="test_OMJulia_")
+  pendulumPath = joinpath(tempDir, pendulumName*".mo")
+  pendulumPath = replace(pendulumPath, "\\"=>"/") # omc only accepts forward slash paths
+  write(pendulumPath, pendulumText)
+ 
+  @testset "sendExpression(simulate()) - file based" begin
+    @test isfile(pendulumPath)
+    omc = OMJulia.OMCSession()
+    try
+      ret = OMJulia.sendExpression(omc, "loadModelica()")
+      ret = OMJulia.sendExpression(omc, "loadFile(\"$pendulumPath\")")
+      ret = OMJulia.sendExpression(omc, "loadModel(\"$pendulumName\")")
+      ret = OMJulia.sendExpression(omc, "buildModel($pendulumName)")
+      ret = OMJulia.sendExpression(omc, "simulate($pendulumName)")
+      @test haskey(ret, "resultFile") && !isempty(ret["resultFile"]) && isfile(ret["resultFile"])
+    catch e
+      println("\ncaught error:")
+      dump(e)
+      @test false
+    finally
+      OMJulia.sendExpression(omc, "quit()", parsed=false)
+    end
+    @test true
+  end
+
+  @testset "ModelicaSystem-simulate()" begin 
+    @test isfile(pendulumPath)
+    omc = OMJulia.OMCSession()
+    try
+      OMJulia.ModelicaSystem(omc, pendulumPath, pendulumName)
+      ret = OMJulia.simulate(omc)
+      @test haskey(ret, "resultFile") && !isempty(ret["resultFile"]) && isfile(ret["resultFile"])
+    catch e
+      println("\ncaught error:")
+      dump(e)
+      @test false
+    finally
+      OMJulia.sendExpression(omc, "quit()", parsed=false)
+    end
+  end
+
 end
