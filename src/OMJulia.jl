@@ -28,6 +28,7 @@ CONDITIONS OF OSMC-PL.
 
 module OMJulia
 include("session.jl") # low-level session interfacing
+include("wrappers.jl") # low-level wrappers
 
 export ModelicaSystem
 
