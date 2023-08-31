@@ -18,9 +18,8 @@ julia> import Pkg; Pkg.add("OMJulia")
 ```
 
 ## Documentation
+OMJulia is [documented here](https://www.openmodelica.org/doc/OpenModelicaUsersGuide/latest/omjulia.html) and commands to the scripting api are [listed here](https://build.openmodelica.org/Documentation/OpenModelica.Scripting.html).
 
-To see the list advanced API, the information are provided in the
-[OpenModelica User's Guide](https://www.openmodelica.org/doc/OpenModelicaUsersGuide/latest/omjulia.html).
 
 ## Usage
 
